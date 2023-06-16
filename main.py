@@ -122,8 +122,6 @@ def main():
         # check if the rover reached the end goal
         if rover.x == end.x and rover.y == end.y:
             print("End goal reached!")
-            pygame.quit()
-            return
 
         screen.fill(WHITE)
         draw_grid()
