@@ -14,6 +14,7 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 
 # Initialize pygame
 pygame.init()
@@ -43,6 +44,15 @@ class Obstacle:
         pygame.draw.rect(screen, RED, (self.x * GRID_SIZE, self.y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
 
 
+class EndGoal:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def draw(self):
+        pygame.draw.rect(screen, YELLOW, (self.x * GRID_SIZE, self.y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+
+
 def draw_grid():
     for x in range(0, WIDTH, GRID_SIZE):
         pygame.draw.line(screen, BLACK, (x, 0), (x, HEIGHT))
@@ -50,11 +60,14 @@ def draw_grid():
         pygame.draw.line(screen, BLACK, (0, y), (WIDTH, y))
 
 
-def generate_obstacles(num_obstacles):
+def generate_obstacles(num_obstacles, exclude_positions):
     obstacles = []
     for _ in range(num_obstacles):
-        x = random.randint(0, NUM_COLS - 1)
-        y = random.randint(0, NUM_ROWS - 1)
+        while True:
+            x = random.randint(0, NUM_COLS - 1)
+            y = random.randint(0, NUM_ROWS - 1)
+            if (x, y) not in exclude_positions:
+                break
         obstacles.append(Obstacle(x, y))
     return obstacles
 
@@ -67,8 +80,18 @@ def is_collision(rover, obstacles):
 
 
 def main():
-    rover = Rover(0, 0)
-    obstacles = generate_obstacles(50)
+    start_x = random.randint(0, NUM_COLS - 1)
+    start_y = random.randint(0, NUM_ROWS - 1)
+    rover = Rover(start_x, start_y)
+
+    while True:
+        end_x = random.randint(0, NUM_COLS - 1)
+        end_y = random.randint(0, NUM_ROWS - 1)
+        if end_x != start_x or end_y != start_y:
+            break
+    end = EndGoal(end_x, end_y)
+
+    obstacles = generate_obstacles(50, exclude_positions=[(start_x, start_y), (end_x, end_y)])
 
     while True:
         for event in pygame.event.get():
@@ -92,10 +115,17 @@ def main():
         if 0 <= new_x < NUM_COLS and 0 <= new_y < NUM_ROWS and not is_collision(Rover(new_x, new_y), obstacles):
             rover.move(dx, dy)
 
+        # check if the rover reached the end goal
+        if rover.x == end.x and rover.y == end.y:
+            print("End goal reached!")
+            pygame.quit()
+            return
+
         screen.fill(WHITE)
         draw_grid()
         for obstacle in obstacles:
             obstacle.draw()
+        end.draw()
         rover.draw()
         pygame.display.flip()
         clock.tick(60)
