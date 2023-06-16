@@ -26,13 +26,17 @@ class Rover:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.trail = []
 
     def move(self, dx, dy):
         self.x += dx
         self.y += dy
+        self.trail.append((self.x, self.y))  # Add current position to the trail
 
     def draw(self):
         pygame.draw.rect(screen, BLUE, (self.x * GRID_SIZE, self.y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+        for trail_pos in self.trail:
+            pygame.draw.rect(screen, BLUE, (trail_pos[0] * GRID_SIZE, trail_pos[1] * GRID_SIZE, GRID_SIZE, GRID_SIZE))
 
 
 class Obstacle:
