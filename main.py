@@ -127,8 +127,8 @@ def main():
         draw_grid()
         for obstacle in obstacles:
             obstacle.draw()
-        end.draw()
         rover.draw()
+        end.draw()
         pygame.display.flip()
         clock.tick(60)
 
