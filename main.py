@@ -83,6 +83,52 @@ def is_collision(rover, obstacles):
     return False
 
 
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+
+def astar(grid, start, end, obstacles):
+    # The set of discovered nodes that may need to be (re-)expanded
+    open_set = set([start])
+    
+    # For node n, came_from[n] is the node immediately preceding it on the cheapest path from start to n currently known.
+    came_from = {}
+
+    # For node n, gscore[n] is the cost of the cheapest path from start to end.
+    gscore = {start: 0}
+
+    # For node n, fscore[n] := gscore[n] + h(n).
+    fscore = {start: heuristic(start, end)}
+
+    while open_set:
+        # the node in openSet having the lowest fScore[] value
+        current = min(open_set, key=lambda x: fscore.get(x, float('inf')))
+
+        if current == end:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            return path[::-1]
+
+        open_set.remove(current)
+
+        for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            neighbor = current[0] + dx, current[1] + dy
+            tentative_gscore = gscore[current] + 1
+
+            if 0 <= neighbor[0] < NUM_COLS and 0 <= neighbor[1] < NUM_ROWS:
+                if neighbor in obstacles or tentative_gscore >= gscore.get(neighbor, float('inf')):
+                    continue
+
+                came_from[neighbor] = current
+                gscore[neighbor] = tentative_gscore
+                fscore[neighbor] = tentative_gscore + heuristic(neighbor, end)
+                open_set.add(neighbor)
+
+    return []  # Return an empty list if there is no path to the end
+
+
 def main():
     start_x = random.randint(0, NUM_COLS - 1)
     start_y = random.randint(0, NUM_ROWS - 1)
@@ -97,27 +143,30 @@ def main():
 
     obstacles = generate_obstacles(50, exclude_positions=[(start_x, start_y), (end_x, end_y)])
 
+    # Create a set with obstacle positions for easy lookup
+    obstacle_positions = set((obstacle.x, obstacle.y) for obstacle in obstacles)
+    
+    # Calculate the path using A* algorithm
+    path = astar(None, (rover.x, rover.y), (end.x, end.y), obstacle_positions)
+    
+    # Iterator for path
+    path_iter = iter(path)
+    
+    # Skip the first position as it is the rover's starting position
+    next(path_iter)
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
-
-        keys = pygame.key.get_pressed()
-        dx, dy = 0, 0
-        if keys[pygame.K_LEFT]:
-            dx = -1
-        elif keys[pygame.K_RIGHT]:
-            dx = 1
-        elif keys[pygame.K_UP]:
-            dy = -1
-        elif keys[pygame.K_DOWN]:
-            dy = 1
-
-        new_x = rover.x + dx
-        new_y = rover.y + dy
-        if 0 <= new_x < NUM_COLS and 0 <= new_y < NUM_ROWS and not is_collision(Rover(new_x, new_y), obstacles):
-            rover.move(dx, dy)
+        
+        # Make the rover follow the path
+        try:
+            next_position = next(path_iter)
+            rover.x, rover.y = next_position
+        except StopIteration:
+            pass
 
         # check if the rover reached the end goal
         if rover.x == end.x and rover.y == end.y:
@@ -130,7 +179,7 @@ def main():
         rover.draw()
         end.draw()
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(5)
 
 
 if __name__ == '__main__':
