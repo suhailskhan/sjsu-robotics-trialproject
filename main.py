@@ -93,6 +93,9 @@ def astar(grid, start, end, obstacles):
     
     # For node n, came_from[n] is the node immediately preceding it on the cheapest path from start to n currently known.
     came_from = {}
+    
+    # For node n, came_dir[n] stores the delta coordinates (dx, dy) from its parent node to itself.
+    came_dir = {}
 
     # For node n, gscore[n] is the cost of the cheapest path from start to end.
     gscore = {start: 0}
@@ -105,11 +108,11 @@ def astar(grid, start, end, obstacles):
         current = min(open_set, key=lambda x: fscore.get(x, float('inf')))
 
         if current == end:
-            path = []
+            delta_path = []
             while current in came_from:
-                path.append(current)
+                delta_path.append(came_dir[current])
                 current = came_from[current]
-            return path[::-1]
+            return delta_path[::-1]
 
         open_set.remove(current)
 
@@ -122,6 +125,7 @@ def astar(grid, start, end, obstacles):
                     continue
 
                 came_from[neighbor] = current
+                came_dir[neighbor] = (dx, dy)  # store delta coordinates
                 gscore[neighbor] = tentative_gscore
                 fscore[neighbor] = tentative_gscore + heuristic(neighbor, end)
                 open_set.add(neighbor)
@@ -147,13 +151,10 @@ def main():
     obstacle_positions = set((obstacle.x, obstacle.y) for obstacle in obstacles)
     
     # Calculate the path using A* algorithm
-    path = astar(None, (rover.x, rover.y), (end.x, end.y), obstacle_positions)
+    delta_path = astar(None, (rover.x, rover.y), (end.x, end.y), obstacle_positions)
     
-    # Iterator for path
-    path_iter = iter(path)
-    
-    # Skip the first position as it is the rover's starting position
-    next(path_iter)
+    # Iterator for delta_path
+    delta_path_iter = iter(delta_path)
 
     while True:
         for event in pygame.event.get():
@@ -163,8 +164,11 @@ def main():
         
         # Make the rover follow the path
         try:
-            next_position = next(path_iter)
-            rover.x, rover.y = next_position
+            delta_position = next(delta_path_iter)
+            new_x = rover.x + delta_position[0]
+            new_y = rover.y + delta_position[1]
+            if 0 <= new_x < NUM_COLS and 0 <= new_y < NUM_ROWS and not is_collision(Rover(new_x, new_y), obstacles):
+                rover.move(delta_position[0], delta_position[1])
         except StopIteration:
             pass
 
