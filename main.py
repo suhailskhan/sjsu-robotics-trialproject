@@ -156,6 +156,8 @@ def main():
     # Iterator for delta_path
     delta_path_iter = iter(delta_path)
 
+    reached_message = True
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -173,8 +175,9 @@ def main():
             pass
 
         # check if the rover reached the end goal
-        if rover.x == end.x and rover.y == end.y:
+        if rover.x == end.x and rover.y == end.y and reached_message:
             print("End goal reached!")
+            reached_message = False
 
         screen.fill(WHITE)
         draw_grid()
